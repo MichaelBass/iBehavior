@@ -1,0 +1,21 @@
+
+.page {
+  background-color: black;
+  height: 100%;
+
+}
+StackLayout Label{
+  color: blue;
+}
+StackLayout TextField{
+  background-color: white;
+  color: blue;
+  padding: 10;
+  margin: 2;
+}
+StackLayout ListView {
+  margin: 2;
+  background-color: white;
+  height: 70%;
+}
+

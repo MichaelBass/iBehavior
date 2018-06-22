@@ -1,0 +1,19 @@
+<ActionBar title="Users" class="action-bar"></ActionBar>
+<StackLayout class="page" orientation="vertical">
+    <TextField [(ngModel)]="userName" hint="New User/Child" returnKeyType="done" (returnPress)="submit($event)" [editable]="editState" class="input input-border"></TextField>
+    <ListView [items]="users" (itemTap)="onItemTap($event)" class="list-group" >
+    	<ng-template let-user="item">
+
+        <StackLayout orientation="vertical">
+          <GridLayout rows="auto auto" columns="* *" class="m-5">
+           <Label [text]="user.name" class="label font-weight-normal m-b-5" textWrap="true" row="0" col="0"></Label>
+           <Label text="Active:" class="label font-weight-normal m-b-5" textWrap="true" row="0" col="1"></Label>
+           <Switch class="m-15" [checked]="user.active" row="0" col="1"></Switch>
+           </GridLayout>
+        </StackLayout>
+
+      </ng-template>
+    </ListView>
+    <Button text="clear users" (tap)="clearUsers()" class="btn btn-primary btn-rounded-lg"></Button>
+    <Button text="refresh users" (tap)="refreshUsers()" class="btn btn-primary btn-rounded-lg"></Button>
+</StackLayout>

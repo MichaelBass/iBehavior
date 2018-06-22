@@ -1,0 +1,16 @@
+
+.page {
+  background-color: black;
+  height: 100%;
+
+}
+StackLayout Label{
+  color: blue;
+}
+
+StackLayout ListView {
+  margin: 10;
+  background-color: white;
+  height: 80%;
+}
+

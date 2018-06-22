@@ -1,0 +1,8 @@
+#nav Label{
+  width:80%;
+  text-align: center;
+}
+
+StackLayout TextField{
+	font-size: 14;
+}

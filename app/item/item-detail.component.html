@@ -1,0 +1,40 @@
+<ActionBar *ngIf="form" title="{{form.form_name}}" class="action-bar"></ActionBar>
+
+<StackLayout *ngIf="myForm" class="page" [formGroup]="myForm" orientation="vertical">
+  
+    
+<!-- https://www.nativescript.org/blog/a-deep-dive-into-telerik-ui-for-nativescripts-listview -->
+<!-- <RadListView *ngIf="fields" [items]="fields" class="list-group" > -->
+    <ListView *ngIf="fields" [items]="fields" class="list-group" flexGrow="1">
+    <ng-template let-item="item" let-odd="odd" let-even="even">
+
+<!--
+    <ScrollView orientation="vertical"> 
+    <Repeater [items]="fields">
+    <Repeater.itemsLayout>
+ -->
+
+        <StackLayout orientation="vertical">
+
+           <Label [text]="item.field_label" class="label font-weight-bold m-b-5" textWrap="true"></Label>
+
+          <TextField *ngIf="item.field_type == 'text'"  class="input input-rounded m-t-10"
+         formControlName="{{item.field_name}}"></TextField>
+
+          <ListPicker *ngIf="item.field_type == 'radio'" [items]="item.select_labels" formControlName="{{item.field_name}}" class="p-15"></ListPicker>
+
+          <SegmentedBar *ngIf="item.field_type == 'yesno'" [items]="item.yesno" formControlName="{{item.field_name}}"  class="p-15"></SegmentedBar>
+
+        </StackLayout> 
+        
+        <!--
+        </Repeater.itemsLayout>
+        </Repeater>
+        </ScrollView>
+      -->
+      
+      </ng-template>
+      </ListView>
+      <!-- </RadListView> -->
+    <Button text="save" (tap)="submit()" class="btn btn-primary btn-rounded-lg"></Button>
+</StackLayout>

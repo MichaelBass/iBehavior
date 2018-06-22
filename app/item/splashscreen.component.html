@@ -1,0 +1,12 @@
+
+<ActionBar title="iBehavior" class="action-bar"></ActionBar>
+
+<StackLayout class="page">
+	<Label text="Splash Screen" class="text-center h1" textWrap="true"></Label>
+
+	<StackLayout id="nav" orientation="vertical">
+	<Label [nsRouterLink]="['/settings']" text="Settings" class="btn btn-primary btn-rounded-lg"></Label>
+	<Label [nsRouterLink]="['/forms']" text="Data Forms" class="btn btn-primary btn-rounded-lg"></Label>
+	<Label [nsRouterLink]="['/users']" text="Manage User" class="btn btn-primary btn-rounded-lg"></Label>
+    </StackLayout>
+</StackLayout>
