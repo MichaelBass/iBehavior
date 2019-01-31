@@ -1,11 +1,14 @@
 
-<ActionBar title="My App" class="action-bar"></ActionBar>
+<ActionBar title="Forms List" class="action-bar"></ActionBar>
 
 <StackLayout class="page">
-	<Button text="Refresh" (tap)="submit()" class="btn btn-primary btn-rounded-lg"></Button>
-    <ListView id="forms" [items]="forms">
+
+	<Button text="Refresh" (tap)="submit()" class="btn btn-outline btn-rounded-sm"></Button>
+    <ListView id="forms" [items]="forms" (itemTap)="onConfirm($event)">
         <ng-template let-item="item">
-           <Label [nsRouterLink]="['/form', item.form_name]" [text]="item.form_name" class="btn btn-primary btn-rounded-lg"></Label>
+           <!--<Label [nsRouterLink]="['/form', item.form_name]" [text]="item.form_name" class="btn btn-primary btn-lg"></Label>-->
+           <Label [text]="item.form_label" class="btn btn-primary btn-lg"></Label>
         </ng-template>
     </ListView>
-</StackLayout>
+    <Label [nsRouterLink]="['/splashscreen']" pageTransition="curlUp" text="Home" class="btn btn-outline btn-rounded-sm"></Label>
+ </StackLayout>

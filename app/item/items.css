@@ -1,5 +1,8 @@
 
 StackLayout ListView {
-  height: 90%;
+  height: 80%;
+  text-align: center;
+}
+StackLayout Label {
   text-align: center;
 }

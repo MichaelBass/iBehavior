@@ -8,7 +8,7 @@
 android {  
   defaultConfig {  
     generatedDensities = []
-    applicationId = "org.nativescript.iBehavior"  
+    applicationId = "net.UCDavis.iBehavior"  
   }  
   aaptOptions {  
     additionalParameters "--no-version-vectors"  

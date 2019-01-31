@@ -1,16 +1,21 @@
 
 .page {
-  background-color: black;
+  background-color: white;
   height: 100%;
 
 }
+
+StackLayout{
+	margin: 0;
+}
+
 StackLayout Label{
-  color: blue;
+  color: black;
+  margin: 2;
+  font-size: 12;
 }
 
 StackLayout ListView {
-  margin: 10;
   background-color: white;
-  height: 80%;
 }
 

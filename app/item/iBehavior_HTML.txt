@@ -1,0 +1,76 @@
+1, Rarely {Very brief (seconds to several minutes) overall.},
+2, Sometimes {More than several minutes, up to an hour or two overall.},
+3, Often {Many hours overall.},
+4, Very Often {All or almost all waking hours.}
+
+
+1, Minimal {[name] <u>was</u> <b>overactive</b>, but this problem <u>did not negatively impact</u> his functioning at all today (activities, work, social interactions); <b>overactivity</b> was not noticeable or disruptive to others}
+2, Mild {[name]'s functioning (activities, work, social interactions) was <u>slightly</u> impacted by <b>overactivity</b>; others may notice overactivity, <u>but not disruptive</u> }
+3, Moderate {[name]'s functioning (activities, work, social interactions) was <b>very much</b> impacted by <b>overactivity</b>; <u>obvious and/or disruptive</u> to others }
+4, Severe {When [name] was overactive, HE/SHE was <u>unable to function</u> at all (activities, work, social interactions) due to <b>overactivity</b>; <u>obvious and/or disruptive to others</u>}
+
+
+1, Rarely {Very brief (seconds to several minutes) overall.},
+2, Sometimes {More than several minutes, up to an hour or two overall.},
+3, Often {Many hours overall.},
+4, Very Often {All or almost all waking hours.}
+
+*************
+1, Minimal {[name] <u>was</u> <b>impulsive</b>, but this problem <u>did not negatively impact</u> his functioning at all today (activities, work, social interactions); <b>impulsivity</b> was not noticeable or disruptive to others}
+2, Mild {[name]'s functioning (activities, work, social interactions) was <u>slightly</u> impacted by <b>impulsivity</b>; others may notice impulsivity, <u>but not disruptive</u> }
+3, Moderate {[name]'s functioning (activities, work, social interactions) was <u>very much</u> impacted by <b>impulsivity</b>; <u>obvious and/or disruptive</u> to others }
+4, Severe {When [name] was <b>impulsive</b>, HE/SHE was <u>unable to function</u> at all (activities, work, social interactions) due to <b>overactivity</b>; obvious and/or disruptive to others}
+*************
+
+1, Rarely {Very brief (seconds to several minutes) overall.},
+2, Sometimes {More than several minutes, up to an hour or two overall.},
+3, Often {Many hours overall.},
+4, Very Often {All or almost all waking hours.}
+
+*************
+1, Minimal {[name] <u>was</u> <b>restless</b>, but this problem <u>did not negatively impact</u> his functioning at all today (activities, work, social interactions); <b>restlessness</b> was not noticeable or disruptive to others}
+2, Mild {[name]'s functioning (activities, work, social interactions) was <u>slightly</u> impacted by <b>restlessness</b>; others may notice <b>restlessness</b>, <u>but not disruptive</u> }
+3, Moderate {[name]'s functioning (activities, work, social interactions) <u>was very much</u> impacted by <b>restlessness</b>; <u>obvious and/or disruptive</u> to others }
+4, Severe {When [name] was impulsive, HE/SHE was <u>unable to function</u> at all (activities, work, social interactions) due to <b>restlessness</b>; <u>obvious and/or disruptive to others</u>}
+************
+
+
+1, Rarely {Very brief (seconds to several minutes) overall.},
+2, Sometimes {More than several minutes, up to an hour or two overall.},
+3, Often {Many hours overall.},
+4, Very Often {All or almost all waking hours.}
+
+*************
+1, Minimal {[name] <b>talked too much</b>, but this problem <u>did not negatively impact</u> his functioning at all today (activities, work, social interactions); his <b>talkativeness</b> was not noticeable or disruptive to others}
+2, Mild {[name]'s functioning (activities, work, social interactions) was <u>slightly</u> impacted by <b>talking too much</b>; others may notice this problem, <u>but not disruptive</u> }
+3, Moderate {[name]'s functioning (activities, work, social interactions) was <u>very much</u> impacted by <b>talking too much</b>; <u>obvious and/or disruptive</u> to others }
+4, Severe {When [name] <b>talked too much</b>, HE/SHE was <u>unable to function</u> at all (activities, work, social interactions) due to <b>talking too much, interrupting, etc</b>; obvious and/or disruptive to others}
+************
+
+1, Rarely {Very brief (seconds to several minutes) overall.},
+2, Sometimes {More than several minutes, up to an hour or two overall.},
+3, Often {Many hours overall.},
+4, Very Often {All or almost all waking hours.}
+
+***********
+1, Minimal {[name] <b>some difficulty waiting</b>, but this problem <u>did not negatively impact</u> his functioning at all today (activities, work, social interactions); <b>difficulty waiting</b> was not noticeable or disruptive to others}
+2, Mild {[name]'s functioning (activities, work, social interactions) was <u>slightly</u> impacted by <b>difficulty waiting</b>; others may notice this, <u>but not disruptive</u> }
+3, Moderate {[name]'s functioning (activities, work, social interactions) was <u>very much</u> impacted by <b>difficulty waiting</b>; <u>obvious and/or disruptive</u> to others }
+4, Severe {When [name] <b>difficulty waiting</b>, HE/SHE was <u>unable to function</u> at all (activities, work, social interactions) due to this problem; <u>obvious and/or disruptive to others</u>}
+************
+
+
+1, Rarely {Very brief (seconds to several minutes) overall.},
+2, Sometimes {More than several minutes, up to an hour or two overall.},
+3, Often {Many hours overall.},
+4, Very Often {All or almost all waking hours.}
+
+************
+1, Minimal {[name] <b>had some difficulty remaining still</b>, but this problem <u>did not negatively impact</u> his functioning at all today (activities, work, social interactions); <b>this problem</b> was not noticeable or disruptive to others}
+2, Mild {[name]'s functioning (activities, work, social interactions) was <u>slightly</u> impacted by <b>difficulty remaining still</b>; others may notice this, <u>but not disruptive</u> }
+3, Moderate {[name]'s functioning (activities, work, social interactions) was <u>very much</u> impacted by <b>difficulty remaining still</b>; <u>obvious and/or disruptive</u> to others }
+4, Severe {When [name] <b>difficulty being still</b>, HE/SHE was <u>unable to function</u> at all (activities, work, social interactions) due to <b>this difficulty</b>; obvious and/or disruptive to others}
+***********
+
+
+

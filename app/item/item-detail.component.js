@@ -3,21 +3,179 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = require("@angular/core");
 var forms_1 = require("@angular/forms");
 var router_1 = require("@angular/router");
+var router_2 = require("nativescript-angular/router");
 var application_settings_1 = require("application-settings");
+var listviewresponses_1 = require("./listviewresponses");
 var item_service_1 = require("./item.service");
-var platform_1 = require("platform");
+var cache_service_1 = require("./cache.service");
+var dialogs_1 = require("nativescript-angular/directives/dialogs");
+var hint_1 = require("./hint");
+var app_store_1 = require("../app.store");
+var looseobject_1 = require("./looseobject");
+var page_1 = require("ui/page");
 var ItemDetailComponent = /** @class */ (function () {
-    function ItemDetailComponent(route, itemService) {
+    function ItemDetailComponent(store, page, route, itemService, modal, vcRef, routerExtensions, cacheService) {
+        this.store = store;
+        this.page = page;
         this.route = route;
         this.itemService = itemService;
+        this.modal = modal;
+        this.vcRef = vcRef;
+        this.routerExtensions = routerExtensions;
+        this.cacheService = cacheService;
+        this.page_size = 3;
+        this.hint = {};
     }
+    ItemDetailComponent.prototype.ngAfterViewInit = function () {
+        this.contentView.nativeElement.opacity = 100;
+        this.setNavigation();
+        //this.contentView.nativeElement.visibility = "hidden";
+        /*
+        this.contentView.nativeElement.animate({
+            opacity: 100,
+            duration: 500
+        });
+        */
+    };
+    ItemDetailComponent.prototype.setNavigation = function () {
+        var prev = this.page.getViewById('prev');
+        if (this.position <= 0) {
+            prev.isEnabled = false;
+        }
+        else {
+            prev.isEnabled = true;
+        }
+    };
     ItemDetailComponent.prototype.ngOnInit = function () {
-        var id = this.route.snapshot.params["form_name"];
         this.forms = JSON.parse(application_settings_1.getString("studyForms"));
+        var id = this.route.snapshot.params["form_name"];
         this.form = this.forms.filter(function (form) { return form.form_name === id; })[0];
+        this.setUser(); //need to setUser after this.form, but before this.toFormGroup
         this.fields = this.form.fields;
-        //this.fields = new ObservableArray(this.form.fields);
-        this.myForm = this.toFormGroup(this.form.fields);
+        this.myForm = this.toFormGroup(this.fields);
+        var _position = this.route.snapshot.params["position"];
+        if (isNaN(_position)) {
+            this.position = 0;
+        }
+        else {
+            this.position = parseInt(_position);
+        }
+        this.paginate(this.position);
+    };
+    ItemDetailComponent.prototype.setUser = function () {
+        var _this = this;
+        if (application_settings_1.hasKey("ActiveUser")) {
+            this.user = JSON.parse(application_settings_1.getString("ActiveUser"));
+            var _schedules = this.user.schedule.filter(function (schedule) { return schedule.redcap_repeat_instrument === _this.form.form_name; });
+        }
+        else {
+            var options = {
+                title: "No User!",
+                message: "Can not find user in application-settings",
+                okButtonText: "OK"
+            };
+            alert(options);
+        }
+    };
+    ItemDetailComponent.prototype.clearPage = function () {
+        for (var i = 0; i < this._fields.length; i++) {
+            if (this._fields[i].field_type == 'radio') {
+                for (var j = 0; j < this._fields[i].select_choices.length; j++) {
+                    if (this.page.getViewById(this._fields[i].field_name + "_" + this._fields[i].select_choices[j].value) == undefined) {
+                        continue;
+                    }
+                    var _StackLayout = this.page.getViewById(this._fields[i].field_name + "_" + this._fields[i].select_choices[j].value);
+                    _StackLayout.backgroundColor = "#edf0f2";
+                }
+            }
+            if (this._fields[i].field_type == 'yesno') {
+                var btn_No = this.page.getViewById(this._fields[i].field_name + "_0");
+                var btn_Yes = this.page.getViewById(this._fields[i].field_name + "_1");
+                btn_No.backgroundColor = "white";
+                btn_Yes.backgroundColor = "white";
+            }
+        }
+    };
+    ItemDetailComponent.prototype.updateUI = function () {
+        for (var j = 0; j < this._fields.length; j++) {
+            if (this.myForm.value[this._fields[j].field_name] != "") {
+                if (this._fields[j].field_type == "yesno") {
+                    var value = this.myForm.value[this._fields[j].field_name];
+                    if (value == "1") {
+                        var btn = this.page.getViewById(this._fields[j].field_name + "_1");
+                        btn.backgroundColor = "#30bcff";
+                    }
+                    if (value == "-1") {
+                        var btn = this.page.getViewById(this._fields[j].field_name + "_0");
+                        btn.backgroundColor = "#30bcff";
+                    }
+                }
+                if (this._fields[j].field_type == "radio") {
+                    var stack = this.page.getViewById(this._fields[j].field_name + "_" + this.myForm.value[this._fields[j].field_name]);
+                    stack.backgroundColor = "#30bcff";
+                }
+            }
+        }
+    };
+    ItemDetailComponent.prototype.paginate = function (_position) {
+        var _this = this;
+        this.position = _position;
+        this.end = this.position + this.page_size;
+        this._fields = this.fields.slice(this.position, this.end);
+        // hide the follow-up questions if first questions is not 'YES'
+        if (this._fields[0].answer != "1") {
+            for (var i = 1; i < this._fields.length; i++) {
+                this._fields[i].visibility = 'hidden';
+                this.fields = this.fields.map(function (obj) { return _this._fields.find(function (o) { return o.field_name === obj.field_name; }) || obj; });
+            }
+        }
+    };
+    ItemDetailComponent.prototype.toFormGroup = function (questions) {
+        var _this = this;
+        var group = {};
+        questions.forEach(function (question) {
+            question.field_label = question.field_label.replace("[name]", _this.user.name);
+            _this.parseHint(question.field_name, question.select_labels);
+            //question.select_labels = this.parseResponses(question.select_labels);
+            question.select_responses = _this.parseResponses2(question.field_name, question.select_labels, question.select_choices);
+            group[question.field_name] = new forms_1.FormControl(question.field_name);
+            group[question.field_name].value = "";
+            if (question.field_name == "name") {
+                group[question.field_name].value = "Enter your name";
+            }
+        });
+        return new forms_1.FormGroup(group);
+    };
+    ItemDetailComponent.prototype.parseResponses2 = function (field_name, response, scores) {
+        var rtn = [];
+        //var pattern = "{(.*)";
+        var pattern = "(.*){(.*)}";
+        for (var i = 0; i < response.length; i++) {
+            var _key = "";
+            var _hint = "";
+            if (response[i] != null) {
+                if (response[i].match(pattern) != null) {
+                    _hint = response[i].match(pattern)[2];
+                    _key = response[i].match(pattern)[1];
+                    //response[i] = "<b>" + _key + "</b>:" + _hint;
+                    //console.log(response[i]);
+                }
+                /*
+                if(response[i].match(pattern) != null){
+                    var search = "{" + response[i].match(pattern)[1];
+                    response[i] = response[i].replace(search, "");
+                }
+                */
+            }
+            var lvr = new listviewresponses_1.ListViewResponses();
+            lvr.field_name = field_name;
+            lvr.response_name = _key; //response[i];
+            lvr.response_label = _hint; //response[i];
+            lvr.response_value = parseInt(scores[i].value);
+            lvr.answer = "";
+            rtn.push(lvr);
+        }
+        return rtn;
     };
     ItemDetailComponent.prototype.parseResponses = function (response) {
         var pattern = "{(.*)";
@@ -31,64 +189,162 @@ var ItemDetailComponent = /** @class */ (function () {
         }
         return response;
     };
-    ItemDetailComponent.prototype.toFormGroup = function (questions) {
+    ItemDetailComponent.prototype.displayHint = function (args) {
         var _this = this;
-        var group = {};
-        questions.forEach(function (question) {
-            question.select_labels = _this.parseResponses(question.select_labels);
-            group[question.field_name] = new forms_1.FormControl(question.field_name);
-            group[question.field_name].value = "";
-            if (question.field_name == "name") {
-                group[question.field_name].value = "Enter your name";
-            }
-        });
-        return new forms_1.FormGroup(group);
-    };
-    ItemDetailComponent.prototype.getNextrecord_id = function () {
-        return this.itemService.getRecordID().map(function (fields) {
-            if (fields.length == 0) {
-                return 1;
-            }
-            else {
-                return Math.max.apply(Math, fields.map(function (o) { return o.record_id; })) + 1;
-            }
-        });
-    };
-    ItemDetailComponent.prototype.saveRegistration = function () {
-        var _this = this;
-        this.getNextrecord_id().subscribe(function (fields) {
-            _this.myForm.value.record_id = fields;
-            _this.myForm.value.uuid = platform_1.device.uuid;
-            var myPackage = [];
-            myPackage.push(_this.myForm.value);
-            _this.itemService.saveData(JSON.stringify(myPackage)).subscribe(function (fields) {
-                if (fields.count == 1) {
-                    var users = [];
-                    if (application_settings_1.hasKey("Users")) {
-                        users = JSON.parse(application_settings_1.getString("Users"));
+        var title = this.fields.filter(function (field) { return field.field_name === args; })[0].field_label;
+        var options = {
+            context: { "title": title, "code": this.hint[args] },
+            fullscreen: false,
+            viewContainerRef: this.vcRef
+        };
+        this.modal.showModal(hint_1.HintComponent, options).then(function (res) {
+            var _field = _this.fields.filter(function (field) { return field.field_name === args; });
+            if (_field.length > 0) {
+                var response = _field[0].select_responses.filter(function (o) { return o.response_name.trim() == res.trim(); });
+                if (response.length > 0) {
+                    _field[0].answer = response[0].response_value.toString();
+                    for (var j = 0; j < _field[0].select_responses.length; j++) {
+                        _field[0].select_responses[j].answer = _field[0].answer;
                     }
-                    var user = JSON.parse("{\"record_id\":\"" + fields + "\",\"name\":\"" + _this.myForm.value.name + "\",\"uuid\":\"" + platform_1.device.uuid + "\"active\":false}");
-                    users.push(user);
-                    application_settings_1.setString("Users", JSON.stringify(users));
+                    _this.myForm.value[_field[0].field_name] = _field[0].answer;
+                    _this.fields = _this.fields.map(function (obj) { return _field.find(function (o) { return o.field_name === obj.field_name; }) || obj; });
+                    //caching data in case not connected.
+                    _this.cacheService.addData(_this.user, _this.myForm, _this.form.form_name);
+                    _this.contentView.nativeElement.refresh();
                 }
-            });
+            }
         });
     };
-    ItemDetailComponent.prototype.submit = function () {
-        if (this.form.form_name == "registration") {
-            this.saveRegistration();
+    ItemDetailComponent.prototype.parseHint = function (key, response) {
+        var itemHints = [];
+        var pattern = "(.*){(.*)}";
+        for (var i = 0; i < response.length; i++) {
+            if (response[i] != null && response[i] != "") {
+                response[i] = response[i].replace("[name]", this.user.name);
+                if (response[i].match(pattern) != null) {
+                    var _hint = response[i].match(pattern)[2];
+                    var _key = response[i].match(pattern)[1];
+                    var _responseHint = new looseobject_1.LooseObject();
+                    _responseHint.key = _key;
+                    _responseHint.value = _hint;
+                    //itemHints.push(_key + " = " +  _hint );
+                    itemHints.push(_responseHint);
+                }
+            }
+        }
+        if (itemHints.length > 0) {
+            this.hint[key] = itemHints;
         }
     };
+    ItemDetailComponent.prototype.saveFormData = function (data) {
+        var _this = this;
+        var _schedules = this.user.schedule.filter(function (schedule) { return schedule.redcap_repeat_instrument === _this.form.form_name; });
+        var obj = {};
+        obj.record_id = this.user.record_id;
+        for (var _i = 0, _a = Object.keys(data); _i < _a.length; _i++) {
+            var key = _a[_i];
+            if (data[key] != "") {
+                obj[key] = data[key];
+                if (data[key] == -1) {
+                    obj[key] = 0;
+                }
+            }
+        }
+        obj["redcap_repeat_instrument"] = _schedules[0].redcap_repeat_instrument;
+        obj["redcap_repeat_instance"] = _schedules[0].redcap_repeat_instance.toString();
+        application_settings_1.setString("redcap_repeat_instance", obj["redcap_repeat_instance"]);
+        //tag each record with an user-defined record-id so data can be pulled with filterLogic.
+        obj[this.form.form_name + "_observantid"] = this.user.record_id;
+        obj[this.form.form_name + "_date_entered"] = new Date().toLocaleString();
+        var myPackage = [];
+        myPackage.push(obj);
+        this.itemService.saveData(JSON.stringify(myPackage)).subscribe(function (fields) {
+            if (fields.count == 1) {
+                _this.cacheService.removeData(obj, _this.form.form_name);
+            }
+        });
+    };
+    ItemDetailComponent.prototype.onSwitchChecked = function (args) {
+        var _this = this;
+        var button = args.object;
+        var field_name = button.id.substring(0, button.id.length - 2);
+        var btn_No = this.page.getViewById(field_name + "_0");
+        var btn_Yes = this.page.getViewById(field_name + "_1");
+        var _controls = this.fields.filter(function (control) { return control.field_name === field_name; });
+        if (button === btn_Yes) {
+            this.myForm.value[field_name] = 1;
+            _controls[0].answer = "1";
+            // hide the follow-up questions initially
+            for (var i = 1; i < this._fields.length; i++) {
+                this._fields[i].visibility = 'visible';
+                this.fields = this.fields.map(function (obj) { return _this._fields.find(function (o) { return o.field_name === obj.field_name; }) || obj; });
+            }
+        }
+        if (button === btn_No) {
+            this.myForm.value[field_name] = -1;
+            _controls[0].answer = "-1";
+        }
+        this.fields = this.fields.map(function (obj) { return _controls.find(function (o) { return o.field_name === obj.field_name; }) || obj; });
+        this.contentView.nativeElement.refresh();
+        //caching data in case not connected.
+        this.cacheService.addData(this.user, this.myForm, this.form.form_name);
+    };
+    ItemDetailComponent.prototype.onSelectResponse = function (args) {
+        var button = args.object;
+        var field_name = button.id.substring(0, button.id.length - 2);
+        var _fields = this.fields.filter(function (field) { return field.field_name === field_name; });
+        var responsescore = _fields[0].select_choices; // Responseoption[]
+        this.myForm.value[field_name] = button.id.substring(button.id.length - 1, button.id.length); //responsescore[args.index].value;
+        var _controls = this.fields.filter(function (control) { return control.field_name === field_name; });
+        _controls[0].answer = button.id.substring(button.id.length - 1, button.id.length); //responsescore[args.index].value;
+        for (var j = 0; j < _controls[0].select_responses.length; j++) {
+            _controls[0].select_responses[j].answer = _controls[0].answer;
+        }
+        this.fields = this.fields.map(function (obj) { return _controls.find(function (o) { return o.field_name === obj.field_name; }) || obj; });
+        this.contentView.nativeElement.refresh();
+        //caching data in case not connected.
+        this.cacheService.addData(this.user, this.myForm, this.form.form_name);
+    };
+    ItemDetailComponent.prototype.previous = function (args) {
+        this.clearPage();
+        if (this.position - this.page_size >= 0) {
+            this.position = this.position - this.page_size;
+        }
+        this.paginate(this.position);
+        this.setNavigation();
+    };
+    ItemDetailComponent.prototype.submit = function (args) {
+        this.clearPage();
+        this.position = this.end;
+        if (this.position >= this.fields.length) {
+            this.saveFormData(this.myForm.value);
+            this.routerExtensions.navigate(["/forms"], {
+                transition: {
+                    name: "flip",
+                    duration: 400,
+                    curve: "linear"
+                }
+            });
+        }
+        else {
+            this.paginate(this.position);
+            this.setNavigation();
+        }
+    };
+    __decorate([
+        core_1.ViewChild("content"),
+        __metadata("design:type", core_1.ElementRef)
+    ], ItemDetailComponent.prototype, "contentView", void 0);
     ItemDetailComponent = __decorate([
         core_1.Component({
             selector: "ns-details",
             moduleId: module.id,
             templateUrl: "./item-detail.component.html",
-            styleUrls: ["./item-detail.css"]
+            styleUrls: ["./item-detail-common.css", "./item-detail.css"]
         }),
-        __metadata("design:paramtypes", [router_1.ActivatedRoute, item_service_1.ItemService])
+        __param(0, core_1.Inject(app_store_1.AppStore)),
+        __metadata("design:paramtypes", [Object, page_1.Page, router_1.ActivatedRoute, item_service_1.ItemService, dialogs_1.ModalDialogService, core_1.ViewContainerRef, router_2.RouterExtensions, cache_service_1.CacheService])
     ], ItemDetailComponent);
     return ItemDetailComponent;
 }());
 exports.ItemDetailComponent = ItemDetailComponent;
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiaXRlbS1kZXRhaWwuY29tcG9uZW50LmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiaXRlbS1kZXRhaWwuY29tcG9uZW50LnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7O0FBQUEsc0NBQXdEO0FBQ3hELHdDQUF3RDtBQUN4RCwwQ0FBaUQ7QUFDakQsNkRBQW1FO0FBS25FLCtDQUE2QztBQUM3QyxxQ0FBa0M7QUFXbEM7SUFTSSw2QkFBb0IsS0FBcUIsRUFBVSxXQUF3QjtRQUF2RCxVQUFLLEdBQUwsS0FBSyxDQUFnQjtRQUFVLGdCQUFXLEdBQVgsV0FBVyxDQUFhO0lBQUksQ0FBQztJQUVoRixzQ0FBUSxHQUFSO1FBRUcsSUFBTSxFQUFFLEdBQUcsSUFBSSxDQUFDLEtBQUssQ0FBQyxRQUFRLENBQUMsTUFBTSxDQUFDLFdBQVcsQ0FBQyxDQUFDO1FBRWxELElBQUksQ0FBQyxLQUFLLEdBQUcsSUFBSSxDQUFDLEtBQUssQ0FBQyxnQ0FBUyxDQUFDLFlBQVksQ0FBQyxDQUFDLENBQUM7UUFDakQsSUFBSSxDQUFDLElBQUksR0FBRyxJQUFJLENBQUMsS0FBSyxDQUFDLE1BQU0sQ0FBQyxVQUFBLElBQUksSUFBSSxPQUFBLElBQUksQ0FBQyxTQUFTLEtBQUssRUFBRSxFQUFyQixDQUFxQixDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUM7UUFDaEUsSUFBSSxDQUFDLE1BQU0sR0FBRyxJQUFJLENBQUMsSUFBSSxDQUFDLE1BQU0sQ0FBQztRQUUvQixzREFBc0Q7UUFDdEQsSUFBSSxDQUFDLE1BQU0sR0FBRyxJQUFJLENBQUMsV0FBVyxDQUFDLElBQUksQ0FBQyxJQUFJLENBQUMsTUFBTSxDQUFDLENBQUM7SUFDckQsQ0FBQztJQUVELDRDQUFjLEdBQWQsVUFBZSxRQUFrQjtRQUM3QixJQUFJLE9BQU8sR0FBRyxPQUFPLENBQUM7UUFDdEIsR0FBRyxDQUFBLENBQUMsSUFBSSxDQUFDLEdBQUMsQ0FBQyxFQUFFLENBQUMsR0FBRyxRQUFRLENBQUMsTUFBTSxF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QXZHWSxrREFBbUIiLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBDb21wb25lbnQsIE9uSW5pdCwgSW5wdXR9IGZyb20gXCJAYW5ndWxhci9jb3JlXCI7XG5pbXBvcnQgeyBGb3JtQ29udHJvbCwgRm9ybUdyb3VwIH0gZnJvbSAnQGFuZ3VsYXIvZm9ybXMnO1xuaW1wb3J0IHsgQWN0aXZhdGVkUm91dGUgfSBmcm9tIFwiQGFuZ3VsYXIvcm91dGVyXCI7XG5pbXBvcnQgeyBnZXRTdHJpbmcsIHNldFN0cmluZywgaGFzS2V5fSBmcm9tIFwiYXBwbGljYXRpb24tc2V0dGluZ3NcIjtcblxuaW1wb3J0IHsgU2VnbWVudGVkQmFyLCBTZWdtZW50ZWRCYXJJdGVtIH0gZnJvbSBcInVpL3NlZ21lbnRlZC1iYXJcIjtcbmltcG9ydCB7IFN0dWR5Zm9ybSB9IGZyb20gJy4vc3R1ZHlmb3JtJztcbmltcG9ydCB7IFN0dWR5bWV0YWRhdGEgfSBmcm9tICcuL3N0dWR5bWV0YWRhdGEnO1xuaW1wb3J0IHsgSXRlbVNlcnZpY2UgfSBmcm9tIFwiLi9pdGVtLnNlcnZpY2VcIjtcbmltcG9ydCB7IGRldmljZSB9IGZyb20gXCJwbGF0Zm9ybVwiO1xuaW1wb3J0IHsgT2JzZXJ2YWJsZUFycmF5IH0gZnJvbSBcInRucy1jb3JlLW1vZHVsZXMvZGF0YS9vYnNlcnZhYmxlLWFycmF5XCI7XG5pbXBvcnQgeyBPYnNlcnZhYmxlIH0gZnJvbSBcInJ4anMvT2JzZXJ2YWJsZVwiO1xuXG5AQ29tcG9uZW50KHtcbiAgICBzZWxlY3RvcjogXCJucy1kZXRhaWxzXCIsXG4gICAgbW9kdWxlSWQ6IG1vZHVsZS5pZCxcbiAgICB0ZW1wbGF0ZVVybDogXCIuL2l0ZW0tZGV0YWlsLmNvbXBvbmVudC5odG1sXCIsXG4gICAgc3R5bGVVcmxzOltcIi4vaXRlbS1kZXRhaWwuY3NzXCJdXG59KVxuXG5leHBvcnQgY2xhc3MgSXRlbURldGFpbENvbXBvbmVudCBpbXBsZW1lbnRzIE9uSW5pdCB7XG5cbiAgICBmb3JtOiBTdHVkeWZvcm07XG4gICAgZmllbGRzOiBTdHVkeW1ldGFkYXRhW107XG4gICAgLy9maWVsZHM6IE9ic2VydmFibGVBcnJheTxTdHVkeW1ldGFkYXRhPjtcbiAgICBmb3JtczogU3R1ZHlmb3JtW107XG4gXG4gICAgbXlGb3JtIDogRm9ybUdyb3VwO1xuXG4gICAgY29uc3RydWN0b3IocHJpdmF0ZSByb3V0ZTogQWN0aXZhdGVkUm91dGUsIHByaXZhdGUgaXRlbVNlcnZpY2U6IEl0ZW1TZXJ2aWNlKSB7IH1cblxuICAgIG5nT25Jbml0KCk6IHZvaWQge1xuXG4gICAgICAgY29uc3QgaWQgPSB0aGlzLnJvdXRlLnNuYXBzaG90LnBhcmFtc1tcImZvcm1fbmFtZVwiXTtcblxuICAgICAgICB0aGlzLmZvcm1zID0gSlNPTi5wYXJzZShnZXRTdHJpbmcoXCJzdHVkeUZvcm1zXCIpKTtcbiAgICAgICAgdGhpcy5mb3JtID0gdGhpcy5mb3Jtcy5maWx0ZXIoZm9ybSA9PiBmb3JtLmZvcm1fbmFtZSA9PT0gaWQpWzBdO1xuICAgICAgICB0aGlzLmZpZWxkcyA9IHRoaXMuZm9ybS5maWVsZHM7XG5cbiAgICAgICAgLy90aGlzLmZpZWxkcyA9IG5ldyBPYnNlcnZhYmxlQXJyYXkodGhpcy5mb3JtLmZpZWxkcyk7XG4gICAgICAgIHRoaXMubXlGb3JtID0gdGhpcy50b0Zvcm1Hcm91cCh0aGlzLmZvcm0uZmllbGRzKTtcbiAgICB9XG5cbiAgICBwYXJzZVJlc3BvbnNlcyhyZXNwb25zZTogc3RyaW5nW10pOnN0cmluZ1tdIHtcbiAgICAgICAgdmFyIHBhdHRlcm4gPSBcInsoLiopXCI7XG4gICAgICAgIGZvcih2YXIgaT0wOyBpIDwgcmVzcG9uc2UubGVuZ3RoOyBpKyspe1xuICAgICAgICAgICBpZihyZXNwb25zZVtpXSAhPSBudWxsKXtcbiAgICAgICAgICAgICAgICBpZihyZXNwb25zZVtpXS5tYXRjaChwYXR0ZXJuKSAhPSBudWxsKXtcbiAgICAgICAgICAgICAgICAgICAgdmFyIHNlYXJjaCA9IFwie1wiICsgcmVzcG9uc2VbaV0ubWF0Y2gocGF0dGVybilbMV07XG4gICAgICAgICAgICAgICAgICAgIHJlc3BvbnNlW2ldID0gcmVzcG9uc2VbaV0ucmVwbGFjZShzZWFyY2gsIFwiXCIpO1xuICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgIH1cbiAgICAgICAgIH1cbiAgICAgICAgIHJldHVybiByZXNwb25zZTtcblxuICAgIH1cblxuICAgIHRvRm9ybUdyb3VwKHF1ZXN0aW9uczogU3R1ZHltZXRhZGF0YVtdICkge1xuICAgICAgICBsZXQgZ3JvdXA6IGFueSA9IHt9O1xuXG4gICAgICAgIHF1ZXN0aW9ucy5mb3JFYWNoKHF1ZXN0aW9uID0+IHtcblxuICAgICAgICAgICAgcXVlc3Rpb24uc2VsZWN0X2xhYmVscyA9IHRoaXMucGFyc2VSZXNwb25zZXMocXVlc3Rpb24uc2VsZWN0X2xhYmVscyk7XG5cbiAgICAgICAgICAgIGdyb3VwW3F1ZXN0aW9uLmZpZWxkX25hbWVdID0gbmV3IEZvcm1Db250cm9sKHF1ZXN0aW9uLmZpZWxkX25hbWUpO1xuICAgICAgICAgICAgZ3JvdXBbcXVlc3Rpb24uZmllbGRfbmFtZV0udmFsdWUgPSBcIlwiO1xuICAgICAgICAgIFxuICAgICAgICAgICAgaWYocXVlc3Rpb24uZmllbGRfbmFtZSA9PSBcIm5hbWVcIil7XG4gICAgICAgICAgICAgICAgZ3JvdXBbcXVlc3Rpb24uZmllbGRfbmFtZV0udmFsdWUgPVwiRW50ZXIgeW91ciBuYW1lXCI7XG4gICAgICAgICAgICB9XG5cbiAgICAgICAgfSk7XG5cbiAgICAgICAgcmV0dXJuIG5ldyBGb3JtR3JvdXAoZ3JvdXApO1xuICAgIH1cblxuICAgIGdldE5leHRyZWNvcmRfaWQoKTogT2JzZXJ2YWJsZTxhbnk+IHtcblxuICAgICAgICByZXR1cm4gdGhpcy5pdGVtU2VydmljZS5nZXRSZWNvcmRJRCgpLm1hcChcbiAgICAgICAgICAgIGZpZWxkcyA9PiB7XG4gICAgICAgICAgICAgICAgaWYoZmllbGRzLmxlbmd0aCA9PSAwKXtcbiAgICAgICAgICAgICAgICAgICAgcmV0dXJuIDE7XG4gICAgICAgICAgICAgICAgfWVsc2V7XG4gICAgICAgICAgICAgICAgICAgIHJldHVybiBNYXRoLm1heC5hcHBseShNYXRoLGZpZWxkcy5tYXAoZnVuY3Rpb24obyl7cmV0dXJuIG8ucmVjb3JkX2lkO30pKSArIDE7XG4gICAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgfVxuICAgICAgICApO1xuICAgIH1cblxuICAgIHNhdmVSZWdpc3RyYXRpb24oKXtcbiAgICAgICAgdGhpcy5nZXROZXh0cmVjb3JkX2lkKCkuc3Vic2NyaWJlKFxuICAgICAgICAgICAgZmllbGRzID0+IHtcbiAgICAgICAgICAgICAgICB0aGlzLm15Rm9ybS52YWx1ZS5yZWNvcmRfaWQgPSBmaWVsZHM7XG4gICAgICAgICAgICAgICAgdGhpcy5teUZvcm0udmFsdWUudXVpZCA9IGRldmljZS51dWlkO1xuICAgICAgICAgICAgICAgIHZhciBteVBhY2thZ2UgPVtdO1xuICAgICAgICAgICAgICAgIG15UGFja2FnZS5wdXNoKHRoaXMubXlGb3JtLnZhbHVlKTtcblxuICAgICAgICAgICAgICAgIHRoaXMuaXRlbVNlcnZpY2Uuc2F2ZURhdGEoIEpTT04uc3RyaW5naWZ5KG15UGFja2FnZSkgKS5zdWJzY3JpYmUoXG4gICAgICAgICAgICAgICAgICAgIGZpZWxkcyA9PiB7XG5cbiAgICAgICAgICAgICAgICAgICAgaWYoZmllbGRzLmNvdW50ID09IDEpe1xuICAgICAgICAgICAgICAgICAgICAgIHZhciB1c2VycyA9W107ICBcbiAgICAgICAgICAgICAgICAgICAgICBpZihoYXNLZXkoXCJVc2Vyc1wiKSl7XG4gICAgICAgICAgICAgICAgICAgICAgICB1c2VycyA9IEpTT04ucGFyc2UoZ2V0U3RyaW5nKFwiVXNlcnNcIikpO1xuICAgICAgICAgICAgICAgICAgICAgIH0gXG4gICAgICAgICAgICAgICAgICAgICAgdmFyIHVzZXIgPSBKU09OLnBhcnNlKCBcIntcXFwicmVjb3JkX2lkXFxcIjpcXFwiXCIgKyBmaWVsZHMgKyBcIlxcXCIsXFxcIm5hbWVcXFwiOlxcXCJcIiArIHRoaXMubXlGb3JtLnZhbHVlLm5hbWUgKyBcIlxcXCIsXFxcInV1aWRcXFwiOlxcXCJcIiArIGRldmljZS51dWlkICsgXCJcXFwiYWN0aXZlXFxcIjpmYWxzZX1cIiAgKTtcbiAgICAgICAgICAgICAgICAgICAgICB1c2Vycy5wdXNoKHVzZXIpO1xuICAgICAgICAgICAgICAgICAgICAgIHNldFN0cmluZyhcIlVzZXJzXCIsIEpTT04uc3RyaW5naWZ5KHVzZXJzKSk7XG4gICAgICAgICAgICAgICAgICAgIH1cblxuXG4gICAgICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgICAgICApOyAgIFxuICAgICAgICAgICAgfVxuICAgICAgICApO1xuICAgIH1cblxuICAgIHN1Ym1pdCgpIHtcbiAgICAgICAgaWYodGhpcy5mb3JtLmZvcm1fbmFtZSA9PSBcInJlZ2lzdHJhdGlvblwiKXtcbiAgICAgICAgICAgIHRoaXMuc2F2ZVJlZ2lzdHJhdGlvbigpO1xuICAgICAgICB9XG4gICAgfVxuXG59XG4iXX0=

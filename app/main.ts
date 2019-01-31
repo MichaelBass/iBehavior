@@ -1,3 +1,8 @@
+// https://github.com/NativeScript/NativeScript/issues/2937
+//https://github.com/NativeScript/NativeScript/issues/4222
+declare var global:any;
+global.process = { env: {} }
+
 // this import should be first in order to load some required settings (like globals and reflect-metadata)
 import { platformNativeScriptDynamic } from "nativescript-angular/platform";
 
